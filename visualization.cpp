@@ -313,12 +313,17 @@ signed main() {
     
     for (int i = 0; i < n; i++) {
         string line;
-
-        do {
-            getline(cin, line);
-        } while(line.empty() && !cin.eof());
         
-        if (cin.eof()) break;
+        if (!getline(cin, line)) {
+            if (cin.eof() && !line.empty()) {
+            } else {
+                break;
+            }
+        }
+        
+        if (line.empty()) {
+            i--; continue;
+        }
         
         if (line.length() < 11) {
             cout << "Format tidak valid: baris terlalu pendek" << endl;
