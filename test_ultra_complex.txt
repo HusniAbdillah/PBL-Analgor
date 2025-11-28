@@ -1,0 +1,21 @@
+20
+14:37 15:03 Sholat_Subuh_Jamaah_1
+14:52 15:18 Sholat_Subuh_Jamaah_2
+13:24 13:54 Senam_Pagi_Kelompok_A
+13:39 14:09 Senam_Pagi_Kelompok_B
+15:16 15:46 Sarapan_Bergizi_Shift_1
+15:31 16:01 Sarapan_Bergizi_Shift_2
+14:08 14:38 Rapat_Cepat_BPD
+14:23 14:53 Meeting_Express_PKK
+16:05 16:35 Workshop_Singkat_UMKM
+16:20 16:50 Pelatihan_Kilat_Komputer
+13:47 14:17 Pelayanan_Surat_Express
+14:02 14:32 Konsultasi_Hukum_Cepat
+16:43 17:13 Makan_Siang_Shift_A
+16:58 17:28 Makan_Siang_Shift_B
+15:29 15:59 Istirahat_Tim_Pagi
+15:44 16:14 Istirahat_Tim_Siang
+17:07 17:37 Lomba_Cerdas_Cermat
+17:22 17:52 Quiz_Berhadiah_Anak
+13:12 13:42 Senam_Sore_Lansia_A
+13:27 13:57 Senam_Sore_Lansia_B
