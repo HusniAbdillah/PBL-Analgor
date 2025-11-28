@@ -22,10 +22,11 @@ using namespace std;
 #define BG_YELLOW "\033[43m"
 
 struct Event {
+    int id;
     int start, end;
     string name;
-    bool selected = false;
-    int step_selected = -1;
+        bool selected = false;
+        int step_selected = -1;
 };
 
 int parseTimeAt(const string& line, int pos) {
@@ -77,84 +78,62 @@ void printHeader() {
     cout << "+==============================================================================+" << RESET << endl;
 }
 
-void printTimeline(const vector<Event>& all_events, int current_step, int last_end) {
-    cout << "\n" << BOLD << BG_BLUE << " TIMELINE PENJADWALAN (24 JAM) " << RESET << endl;
-    
+void printTimeline(const vector<Event>& all_events, int current_step, int last_end, int window_size = 5, bool full = false) {
+    cout << "\n" << BOLD << BG_BLUE << " TIMELINE PENJADWALAN (FOKUS AREA) " << RESET << endl;
     cout << "\n" << CYAN << "Waktu: ";
-    for (int h = 0; h < 24; h += 2) {
-        cout << setw(3) << setfill('0') << h << "   ";
-    }
+    for (int h = 0; h < 24; h += 2) cout << setw(3) << setfill('0') << h << "   ";
     cout << RESET << "\n" << CYAN << "       ";
-    for (int h = 0; h < 24; h += 2) {
-        cout << "|    ";
-    }
+    for (int h = 0; h < 24; h += 2) cout << "|    ";
     cout << RESET << endl;
-    
-    if (last_end > 0) {
-        cout << "\n" << BG_YELLOW << " Aktivitas terakhir selesai pukul: " << minToTime(last_end) << " " << RESET << endl;
-    }
-    
-    cout << "\n" << BOLD << "DAFTAR KEGIATAN:" << RESET << endl;
+    if (last_end > 0) cout << "\n" << BG_YELLOW << " Aktivitas terakhir selesai: " << minToTime(last_end) << " " << RESET << endl;
+    if (full) cout << "\n" << BOLD << "DAFTAR KEGIATAN (FULL):" << RESET << endl;
+    else cout << "\n" << BOLD << "DAFTAR KEGIATAN (Show " << window_size << " prev/next):" << RESET << endl;
     cout << string(80, '-') << endl;
-    
-    for (int i = 0; i < all_events.size(); i++) {
+    int start_idx, end_idx;
+    if (full) {
+        start_idx = 0;
+        end_idx = (int)all_events.size();
+    } else {
+        start_idx = max(0, current_step - window_size);
+        end_idx = min((int)all_events.size(), current_step + window_size + 1);
+    }
+    if (start_idx > 0) cout << CYAN << "   ... (" << start_idx << " kegiatan sebelumnya disembunyikan) ..." << RESET << endl;
+    for (int i = start_idx; i < end_idx; i++) {
         const auto& event = all_events[i];
-        
         string color = WHITE;
         string status = "MENUNGGU";
-        string icon = "[O]";
-        
-        if (event.selected) {
-            color = GREEN;
-            status = "TERPILIH";
-            icon = "[+]";
-        } else if (i < current_step) {
-            color = RED;
-            status = "DITOLAK";
-            icon = "[-]";
-        } else if (i == current_step) {
-            color = YELLOW;
-            status = "SEDANG DIPROSES";
-            icon = "[*]";
-        }
-        
+        string icon = "[ ]";
+        if (event.selected) { color = GREEN; status = "TERPILIH"; icon = "[+]"; }
+        else if (i < current_step) { color = RED; status = "DITOLAK "; icon = "[-]"; }
+        else if (i == current_step) { color = YELLOW; status = "DIPROSES"; icon = "[*]"; }
         cout << color << icon << " " << minToTime(event.start) << "-" << minToTime(event.end)
              << " [" << status << "] " << event.name << RESET << endl;
-        
         cout << "     ";
         for (int h = 0; h < 24; h++) {
             int hour_start = h * 60;
             int hour_end = (h + 1) * 60;
-            
             if (event.start < hour_end && event.end > hour_start) {
-                if (event.selected) {
-                    cout << GREEN << "##" << RESET;
-                } else if (i < current_step) {
-                    cout << RED << "xx" << RESET;
-                } else if (i == current_step) {
-                    cout << YELLOW << ".." << RESET;
-                } else {
-                    cout << WHITE << "--" << RESET;
-                }
-            } else {
-                cout << "  ";
-            }
+                if (event.selected) cout << GREEN << "##" << RESET;
+                else if (i < current_step) cout << RED << "xx" << RESET;
+                else if (i == current_step) cout << YELLOW << ".." << RESET;
+                else cout << WHITE << "--" << RESET;
+            } else cout << "  ";
             cout << " ";
         }
         cout << endl;
-        if (i < all_events.size() - 1) cout << endl;
     }
+    if (end_idx < all_events.size()) cout << CYAN << "   ... (" << all_events.size() - end_idx << " kegiatan berikutnya disembunyikan) ..." << RESET << endl;
     cout << string(80, '-') << endl;
 }
 
-void printBucketStatus(const vector<vector<Event>>& bucket, int current_time, int step) {
+void printBucketStatus(const vector<vector<int>>& bucket, const vector<Event>& all_events, int current_time, int step) {
     cout << "\n" << BOLD << BLUE << "BUCKET STATUS" << RESET << endl;
     cout << "Sedang memproses waktu: " << YELLOW << minToTime(current_time) << RESET << endl;
-    
     if (!bucket[current_time].empty()) {
         cout << "Events di bucket[" << current_time << "]:" << endl;
-        for (const auto& event : bucket[current_time]) {
-            cout << "  - " << event.name << " (" << minToTime(event.start) 
+        for (int idx : bucket[current_time]) {
+            const auto& event = all_events[idx];
+            cout << "  - " << event.name << " (" << minToTime(event.start)
                  << "-" << minToTime(event.end) << ")" << endl;
         }
     } else {
@@ -203,10 +182,16 @@ void printFinalResult(const vector<Event>& result, const vector<Event>& all_even
     cout << "\n" << BOLD << ">> JADWAL FINAL BALAI DESA:" << RESET << endl;
     cout << string(80, '-') << endl;
     
-    vector<Event> sorted_result = result;
-    sort(sorted_result.begin(), sorted_result.end(), [](const Event& a, const Event& b) {
-        return a.start < b.start;
-    });
+    vector<vector<Event>> start_bucket(1441);
+    for (const auto& ev : result) {
+        if (ev.start >= 0 && ev.start <= 1440) start_bucket[ev.start].push_back(ev);
+    }
+
+    vector<Event> sorted_result;
+    sorted_result.reserve(result.size());
+    for (int t = 0; t <= 1440; ++t) {
+        for (const auto& ev : start_bucket[t]) sorted_result.push_back(ev);
+    }
     
     for (int i = 0; i < sorted_result.size(); i++) {
         const auto& event = sorted_result[i];
@@ -308,7 +293,7 @@ signed main() {
     int n; cin >> n;
     cin.ignore();
     
-    vector<vector<Event>> bucket(1441);
+    vector<vector<int>> bucket(1441);
     vector<Event> all_events;
     
     for (int i = 0; i < n; i++) {
@@ -365,9 +350,9 @@ signed main() {
             continue;
         }
         
-        Event event = {start, end, name, false, -1};
-        bucket[end].emplace_back(event);
+        Event event = {(int)all_events.size(), start, end, name, false, -1};
         all_events.push_back(event);
+        bucket[end].push_back(event.id);
     }
     
     hideCursor();
@@ -396,37 +381,25 @@ signed main() {
         if (bucket[time].empty()) continue;
         
         printHeader();
-        printBucketStatus(bucket, time, step);
+        printBucketStatus(bucket, all_events, time, step);
         pauseForInput("Tekan ENTER untuk memproses bucket ini...");
-        
-        for (auto& event : bucket[time]) {
+        for (int idx : bucket[time]) {
+            auto& event = all_events[idx];
             printHeader();
-            
             bool will_select = (event.start >= last);
-            
             printTimeline(all_events, event_index, last);
             printAlgorithmStep(event, step, last, will_select);
-            
             if (will_select) {
                 result.push_back(event);
                 last = event.end;
-                
-                for (auto& ae : all_events) {
-                    if (ae.name == event.name && ae.start == event.start) {
-                        ae.selected = true;
-                        ae.step_selected = step;
-                        break;
-                    }
-                }
-                
+                all_events[idx].selected = true;
+                all_events[idx].step_selected = step;
                 cout << "\n" << GREEN << "KEGIATAN BERHASIL DITAMBAHKAN KE JADWAL!" << RESET << endl;
             } else {
                 cout << "\n" << RED << "KEGIATAN DILEWATI KARENA KONFLIK WAKTU" << RESET << endl;
             }
-            
             step++;
             event_index++;
-            
             pauseForInput("Tekan ENTER untuk melanjutkan ke kegiatan berikutnya...");
         }
     }
@@ -436,7 +409,7 @@ signed main() {
     cout << "\n" << BG_GREEN << " ALGORITMA GREEDY TELAH SELESAI DIEKSEKUSI! " << RESET << endl;
     animateText("\nMenampilkan hasil akhir...", 30);
     
-    printTimeline(all_events, all_events.size(), last);
+    printTimeline(all_events, all_events.size(), last, 5, true);
     printFinalResult(result, all_events);
     
     showCursor();
