@@ -5,15 +5,15 @@ int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    string S, T;
-    cin >> S >> T;
+    string C, D;
+    cin >> C >> D;
 
-    int n = S.size(), m = T.size();
+    int n = C.size(), m = D.size();
     vector<vector<int>> dp(n + 1, vector<int>(m + 1, 0));
 
     for (int i = 1; i <= n; i++) {
         for (int j = 1; j <= m; j++) {
-            if (S[i - 1] == T[j - 1])
+            if (C[i - 1] == D[j - 1])
                 dp[i][j] = dp[i - 1][j - 1] + 1;
             else
                 dp[i][j] = max(dp[i - 1][j], dp[i][j - 1]);
